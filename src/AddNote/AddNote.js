@@ -1,0 +1,113 @@
+import React from 'react'
+import ApiContext from '../ApiContext'
+import config from '../config'
+import '../index.css';
+
+
+class AddNote extends React.Component {
+  state = { 
+    note:'',
+    folder:'',
+    content:'',
+    date_published:''
+   }
+
+  static contextType = ApiContext;
+
+  generateFolderList = () => {
+    const folderList = this.context.folders.map(item => {
+      return <option key={item.id} value={item.id}>{item.folder}</option>
+    })
+    return folderList
+  }
+
+  handleClickAddNote = (name, description, folder) => {
+   let newDate = new Date().toISOString()
+    let newItem = JSON.stringify({
+      note: name,
+      folder: folder || document.getElementById('add-folder').value,
+      content: description,
+      date_published: newDate
+    })
+    let error;
+
+    if(name.length >= 3 && description.length >= 3){
+    fetch(`${config.API_ENDPOINT}/notes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: newItem
+    })
+    .then(res => {
+      if (!res.ok){
+        error = { code: res.status };
+      }
+      return res.json();
+    })
+    .then(note => {
+      if (error) {
+        error.message = note.message;
+        return Promise.reject(error);
+      }
+      this.context.addNoteToState(note)
+      this.props.history.push(`/`)
+    })
+    .catch(error => {
+      console.error({error});
+    });
+  } else {
+    alert('Please use at least 3 characters for name and description')
+  }
+    
+  }
+
+  getName = (name) => {
+    this.setState({
+      note:name
+    })
+
+  }
+
+  getFolder = (folder) => {
+    this.setState({
+      folder: folder
+    })
+
+  }
+  getContent = (content) => {
+    this.setState({
+      content: content
+    })
+
+  }
+
+
+
+
+  render() { 
+    
+
+    return (
+
+      <form className="AddNoteForm">
+        <label htmlFor="add-folder">Add Folder</label>
+        <select id="add-folder"
+        onChange={(e) => this.getFolder(e.target.value)}
+        >{this.generateFolderList()}</select>
+        <label htmlFor="note-name">Note Name</label>
+        <input 
+          id="note-name"
+          onChange={(e) => this.getName(e.target.value)}
+        >
+        </input>
+        <label htmlFor="add-description">Add Description</label>
+        <textarea name="add-description" id="add-description" cols="30" rows="10"
+        onChange={(e) => this.getContent(e.target.value)}
+        ></textarea>
+        <button type="button" onClick={()=> this.handleClickAddNote(this.state.note, this.state.content, this.state.id)}>Add Note</button>
+      </form>
+
+      );
+  }
+}
+ 
+export default AddNote;
